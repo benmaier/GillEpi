@@ -1,7 +1,10 @@
 from __future__ import print_function
+import random
+
 import numpy as np
 import networkx as nx
 
+"""
 class SIR_node():
 
     def __init__(self):
@@ -27,6 +30,7 @@ class SIR_node():
     def set_susceptible(self):
         self.infected = False
         self.recovered = False
+"""
 
 
 
@@ -40,15 +44,20 @@ class Gillespie_SIR():
                  infection_seeds = 5,
                  vaccinated = 0,
                  rewire_function = None,
-                 mean_degree_function = None
+                 mean_degree_function = None,
+                 verbose = False
                 ):
 
 
         if nx.is_directed(G):
             raise TypeError("G is directed but needs to be undirected")
 
+        self.G = G
+
         self.rewire_function = rewire_function
-        self.mean_degree_function = mean_degree_function
+        self.mean_degree = mean_degree_function
+
+        self.verbose = verbose
 
         if self.rewire_function is None:
             self.rewiring_rate = 0.
@@ -72,7 +81,7 @@ class Gillespie_SIR():
             else:
                 to_choose_from = self.nodes()
 
-            vaccinated_nodes = np.random.choice(list(to_choose_from),vaccinated,replace=False)
+            vaccinated_nodes = random.sample(to_choose_from,vaccinated)
             self.recovered.update(vaccinated_nodes)
             #for n in vaccinated_nodes:
             #   self.SIR_nodes[n].set_recovered()
@@ -81,8 +90,9 @@ class Gillespie_SIR():
         # add infected seed nodes
         if hasattr(infection_seeds,"__len__"):
             seed_nodes = infection_seeds
+            infection_seeds = len(infection_seeds)
         else:
-            seed_nodes = np.random.choice(list(self.get_susceptibles()),infection_seeds,replace=False)
+            seed_nodes = random.sample(self.get_susceptibles(),infection_seeds)
 
         self.infected.update(seed_nodes)
         #for n in vaccinated_nodes:
@@ -92,52 +102,68 @@ class Gillespie_SIR():
         self.SI_links = set()
         for newly_inf in self.infected:
             new_edges = [ (newly_inf, n) for n in G.neighbors(newly_inf) ]
-            new_SI_links = self.get_SI_links_from_edge_list(new_edges)
+            removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
             self.SI_links.update(new_SI_links)
+            self.SI_links.difference_update(removed_SI_links)
+
+        self.t = 0.
+        self.s_of_t = [ [ 0., self.s() ] ]
+        self.i_of_t = [ [ 0., self.i() ] ]
+        self.r_of_t = [ [ 0., self.r() ] ]
+
+        if self.mean_degree is not None:
+            self.k_of_t = [ [ 0., self.mean_degree(G) ] ]
 
 
     def get_event_rates(self):
         return np.array([ 
                           self.number_of_SI_links() * self.infection_rate,
                           self.number_of_infected() * self.recovery_rate,
-                          self.rewiring_rate()      * self.G.number_of_nodes()
-                        ])
+                          self.G.number_of_nodes()  * self.rewiring_rate
+                        ],dtype=float)
 
-    def rewire_event(self):
+    def is_susceptible(self,node):
+        return (node not in self.infected) and (node not in self.recovered)
 
-        # get deleted and new edges from rewiring 
-        deleted_edges, new_edges = self.rewire_function()
-        adjoint_deleted_edges = [ (e[1],e[0]) for e in deleted_edges ]
-
-        # remove all edges from SI links that have been removed
-        # due to rewiring
-        self.SI_links.remove(deleted_edges)
-        self.SI_links.remove(adjoint_deleted_edges)
-
-        # process new edges for SI links
-        new_SI_links = self.get_SI_links_from_edge_list(new_edges)
-        self.SI_links.update(new_SI_links)
-
-    def get_SI_links_from_edge_list(self,edgelist):
-        return [ 
-                    e for e in edgelist \
-                    if (e[0] in self.infected and e[1] not in self.infected and e[1] not in self.recovered) or \
-                       (e[1] in self.infected and e[0] not in self.infected and e[0] not in self.recovered)
-               ]
+    def get_removed_and_new_SI_links_from_edge_list(self,edgelist):
+        new_SI = []
+        removed_SI = []
+        [ 
+              new_SI.append(e) \
+              if ( (e[0] in self.infected and self.is_susceptible(e[1]) ) or \
+                   (e[1] in self.infected and self.is_susceptible(e[0]) ) )  \
+              else removed_SI.extend([e,(e[1],e[0])]) \
+              for e in edgelist
+        ]
+        return removed_SI, new_SI
 
     def recover_event(self):
 
-        recovered = np.random.choice(list(self.infected))
+        if self.verbose:
+            print("============ recover event")
+        recovered = random.sample(self.infected,1)[0]
         self.infected.remove(recovered)
         self.recovered.add(recovered)
 
         deleted_edges = []
-        [ deleted_edges.extend([(recovered,n), (n,recovered)]) for n in G.neighbors(recovered) ]
-        self.SI_links.remove(deleted_edges)
+        [ deleted_edges.extend([(recovered,n), (n,recovered)]) for n in self.G.neighbors(recovered) ]
 
-    def infect_event(self):
+        if self.verbose:
+            print("deleted",deleted_edges)
 
-        infective_link = np.random.choice(list(self.SI_links))
+        self.SI_links.difference_update(deleted_edges)
+
+    def infection_event(self):
+        if self.verbose:
+            print("============= infection event")
+            print("infected:", self.infected)
+            print("recovered:", self.recovered)
+            print("SI link", self.SI_links)
+
+        infective_link = random.sample(self.SI_links,1)[0]
+
+        if self.verbose:
+            print("infective_link:", infective_link)
 
         if infective_link[0] not in self.infected:
             newly_inf = infective_link[0]
@@ -146,27 +172,88 @@ class Gillespie_SIR():
             newly_inf = infective_link[1]
             self.infected.add(infective_link[1])
         else:
-            raise ValueError("There was a non SI-link in the array of SI links")
+            raise ValueError("There was a non SI-link in the array of SI links. This shouldn't happen.")
 
         # process new edges for SI links
-        new_edges = [ (newly_inf, n) for n in G.neighbors[newly_inf] ]
-        new_SI_links = self.get_SI_links_from_edge_list(new_edges)
-        self.SI_links.update(new_SI_links)
+        new_edges = [ (newly_inf, n) for n in self.G.neighbors(newly_inf) ]
+        removed_SI_links,new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
 
-    def choose_event(self):
-        pass
+        if self.verbose:
+            print("now infected:", self.infected)
+            print("potential new_SI_links:", new_edges)
+            print("new_SI_links:", new_SI_links)
+            print("removed_SI_links:", removed_SI_links)
+
+        self.SI_links.update(new_SI_links)
+        self.SI_links.difference_update(removed_SI_links)
+
+
+    def rewire_event(self):
+
+        # get deleted and new edges from rewiring 
+        deleted_edges, new_edges = self.rewire_function()
+
+        if self.verbose:
+            print("============= rewiring event")
+            print("rewired:", deleted_edges,new_edges)
+
+        adjoint_deleted_edges = [ (e[1],e[0]) for e in deleted_edges ]
+
+        # remove all edges from SI links that have been removed
+        # due to rewiring
+        self.SI_links.difference_update(deleted_edges)
+        self.SI_links.difference_update(adjoint_deleted_edges)
+
+        # process new edges for SI links
+        removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+        self.SI_links.update(new_SI_links)
+        self.SI_links.difference_update(removed_SI_links)
+
+    def choose_tau_and_event(self):
+        rates = self.get_event_rates()
+        total_rate = rates.sum()
+        tau = np.random.exponential(total_rate)
+        try:
+            event = np.random.choice(len(rates),p=rates/total_rate)
+        except ValueError as e:
+            print("rates:", rates)
+            print("total_rate:", total_rate)
+            raise ValueError(e)
+
+        return tau, event
+
+    def event(self):
+
+        tau,event = self.choose_tau_and_event()
+        self.t += tau
+
+        if event==0:
+            self.infection_event()
+            self.s_of_t.append([ self.t, self.s() ])
+            self.i_of_t.append([ self.t, self.i() ])
+        elif event==1:
+            self.recover_event()
+            self.r_of_t.append([ self.t, self.r() ])
+            self.i_of_t.append([ self.t, self.i() ])
+        elif event==2:
+            self.rewire_event()
+            if self.mean_degree is not None:
+                self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
+
 
     def simulate(self):
-        pass
 
-    def get_number_of_SI_links():
+        while self.number_of_infected() > 0:
+            self.event()
+
+    def number_of_SI_links(self):
         return len(self.SI_links)
 
     def get_susceptibles(self):
         return (self.nodes - self.infected) - self.recovered
 
     def number_of_susceptibles(self):
-        return G.number_of_nodes() - self.number_of_infected() - self.number_of_recovered()
+        return self.G.number_of_nodes() - self.number_of_infected() - self.number_of_recovered()
 
     def number_of_infected(self):
         return len(self.infected)
@@ -184,27 +271,70 @@ class Gillespie_SIR():
         return self.number_of_recovered()
 
     def s(self):
-        return self.S / float(self.G.number_of_nodes())
+        return self.S() / float(self.G.number_of_nodes())
 
     def i(self):
-        return self.I / float(self.G.number_of_nodes())
+        return self.I() / float(self.G.number_of_nodes())
 
     def r(self):
-        return self.R / float(self.G.number_of_nodes())
+        return self.R() / float(self.G.number_of_nodes())
+
+    def get_t_R0(self):        
+        if self.mean_degree is not None:
+            k_of_t = np.array(self.k_of_t)
+            t, k = k_of_t[:,0], k_of_t[:,1]
+            return t, k * self.infection_rate / self.recovery_rate
+
 
             
 if __name__=="__main__":
     from flockworks import flockwork
-
-    F = flockwork(0.5,N=100)
-
-    F.equilibrate()
-
-    infection_rate = 0.1
-    recovery_rate = 0.01
-    rewiring_rate = 0.01
+    import pylab as pl
+    import seaborn as sns
 
 
-    sim = Gillespie_SIR(F.G,infection_rate,recovery_rate,rewiring_rate,rewire_function=F.rewire)
+    show_eq = False
+
+    F = flockwork(0.2,N=1000)
+
+    if show_eq:
+        ts = F.equilibrate(deterministic_equilibration=True,get_time_series=True)
+    else:
+        F.equilibrate()
 
 
+    infection_rate = 2.0 
+    recovery_rate = 1.
+    rewiring_rate = 1.
+
+
+    sim = Gillespie_SIR(F.G,
+                        infection_rate,
+                        recovery_rate,
+                        rewiring_rate,
+                        infection_seeds = 5,
+                        rewire_function = F.rewire,
+                        mean_degree_function = F.mean_degree)
+
+    sim.simulate()
+
+
+    fig,ax = pl.subplots(2,1,figsize=(9,6))
+
+    s = np.array(sim.s_of_t)
+    i = np.array(sim.i_of_t)
+    r = np.array(sim.r_of_t)
+    ax[0].step(s[:,0],s[:,1])
+    ax[0].step(r[:,0],r[:,1])
+    ax[0].step(i[:,0],i[:,1])
+
+    t,R0 = sim.get_t_R0()
+
+    if show_eq:
+        t_eq = ts['t']-ts['t'][-1]
+        R0_eq = ts['Mean Degree'] * infection_rate / recovery_rate
+        ax[1].step(np.concatenate((t_eq,t)),np.concatenate((R0_eq,R0)))
+    else:
+        ax[1].step(t,R0)
+
+    pl.show()
