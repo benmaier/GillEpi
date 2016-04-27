@@ -309,7 +309,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.5,N=1000)
+    F = flockwork(0.7,N=1000)
 
     start = time.time()
     print("equilibrating...")
@@ -320,7 +320,7 @@ if __name__=="__main__":
     end = time.time()
     print("equilibration done, took", end-start,"seconds")
 
-    infection_rate = 1. 
+    infection_rate = 2. 
     recovery_rate = 1.
     susceptible_rate = 1.
     rewiring_rate = 1.
