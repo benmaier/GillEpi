@@ -6,7 +6,7 @@ import networkx as nx
 
 from SIR_node import SIR_node
 
-class SIR():
+class SIS():
 
     def __init__(self,
                  G,              # (dynamic) network. beware! this is going to change during simulation
@@ -132,8 +132,7 @@ class SIR():
             print("============ recover event")
         recovered = random.sample(self.infected,1)[0]
         self.infected.remove(recovered)
-        self.recovered.add(recovered)
-        self.SIR_nodes[recovered].set_recovered()
+        self.SIR_nodes[recovered].set_susceptible()
 
         deleted_edges = []
         [ deleted_edges.extend([(recovered,n), (n,recovered)]) for n in self.G.neighbors(recovered) ]
@@ -225,7 +224,7 @@ class SIR():
             self.i_of_t.append([ self.t, self.i() ])
         elif event==1:
             self.recover_event()
-            self.r_of_t.append([ self.t, self.r() ])
+            self.s_of_t.append([ self.t, self.s() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==2:
             self.rewire_event()
@@ -233,9 +232,9 @@ class SIR():
                 self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
 
 
-    def simulate(self):
+    def simulate(self,tmax):
 
-        while self.number_of_infected() > 0 and self.number_of_susceptibles() > 0:
+        while self.t < tmax:
             self.event()
 
     def number_of_SI_links(self):
@@ -288,7 +287,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.5,N=1000)
+    F = flockwork(0.7,N=1000)
 
     start = time.time()
     print("equilibrating...")
@@ -304,17 +303,17 @@ if __name__=="__main__":
     rewiring_rate = 1.
 
 
-    sim = SIR(F.G,
+    sim = SIS(F.G,
                         infection_rate,
                         recovery_rate,
                         rewiring_rate,
-                        infection_seeds = 2,
+                        infection_seeds = 5,
                         rewire_function = F.rewire,
                         mean_degree_function = F.mean_degree,
                         #verbose = True,
                         )
 
-    sim.simulate()
+    sim.simulate(tmax=10)
 
     fig,ax = pl.subplots(2,1,figsize=(9,6))
 
