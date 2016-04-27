@@ -144,7 +144,8 @@ class SIR():
         self.SI_links.difference_update(deleted_edges)
 
     def infection_event(self):
-        if self.verbose:
+        #if self.verbose:
+        if self.verbose:    
             print("============= infection event")
             print("infected:", self.infected)
             print("recovered:", self.recovered)
@@ -155,12 +156,12 @@ class SIR():
         if self.verbose:
             print("infective_link:", infective_link)
 
-        if infective_link[0] not in self.infected:
-            newly_inf = infective_link[0]
-            self.infected.add(infective_link[0])            
-        elif infective_link[1] not in self.infected:
+        if self.SIR_nodes[ infective_link[0] ].is_infected() and self.SIR_nodes[ infective_link[1] ].is_susceptible():
             newly_inf = infective_link[1]
             self.infected.add(infective_link[1])
+        elif self.SIR_nodes[ infective_link[1] ].is_infected() and self.SIR_nodes[ infective_link[0] ].is_susceptible():
+            newly_inf = infective_link[0]
+            self.infected.add(infective_link[0])
         else:
             raise ValueError("There was a non SI-link in the array of SI links. This shouldn't happen.")        
 
@@ -205,6 +206,7 @@ class SIR():
         rates = self.get_event_rates()
         total_rate = rates.sum()
         tau = np.random.exponential(1./total_rate)
+        print(rates)
         try:
             event = np.random.choice(len(rates),p=rates/total_rate)
         except ValueError as e:
@@ -288,7 +290,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.5,N=1000)
+    F = flockwork(0.8,N=1000)
 
     start = time.time()
     print("equilibrating...")
@@ -299,7 +301,7 @@ if __name__=="__main__":
     end = time.time()
     print("equilibration done, took", end-start,"seconds")
 
-    infection_rate = 1.5 
+    infection_rate = 1.
     recovery_rate = 1.
     rewiring_rate = 1.
 
@@ -308,7 +310,7 @@ if __name__=="__main__":
                         infection_rate,
                         recovery_rate,
                         rewiring_rate,
-                        infection_seeds = 2,
+                        infection_seeds = 5,
                         rewire_function = F.rewire,
                         mean_degree_function = F.mean_degree,
                         #verbose = True,

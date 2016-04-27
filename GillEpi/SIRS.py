@@ -6,12 +6,13 @@ import networkx as nx
 
 from SIR_node import SIR_node
 
-class SIS():
+class SIRS():
 
     def __init__(self,
                  G,              # (dynamic) network. beware! this is going to change during simulation
                  infection_rate, # per S-I link
                  recovery_rate,  # per individual
+                 susceptible_rate,  # per individual
                  rewiring_rate = 0.,  # per individual
                  infection_seeds = 5,
                  vaccinated = 0,
@@ -39,6 +40,7 @@ class SIS():
 
         self.infection_rate = infection_rate
         self.recovery_rate = recovery_rate
+        self.susceptible_rate = susceptible_rate
 
         self.rates = np.array( [ infection_rate, recovery_rate, rewiring_rate ] )
 
@@ -92,9 +94,10 @@ class SIS():
 
     def get_event_rates(self):
         return np.array([ 
-                          self.number_of_SI_links() * self.infection_rate,
-                          self.number_of_infected() * self.recovery_rate,
-                          self.G.number_of_nodes()  * self.rewiring_rate
+                          self.number_of_SI_links()  * self.infection_rate,
+                          self.number_of_infected()  * self.recovery_rate,
+                          self.number_of_recovered() * self.susceptible_rate,
+                          self.G.number_of_nodes()   * self.rewiring_rate
                         ],dtype=float)
 
     """
@@ -132,7 +135,8 @@ class SIS():
             print("============ recover event")
         recovered = random.sample(self.infected,1)[0]
         self.infected.remove(recovered)
-        self.SIR_nodes[recovered].set_susceptible()
+        self.recovered.add(recovered)
+        self.SIR_nodes[recovered].set_recovered()
 
         deleted_edges = []
         [ deleted_edges.extend([(recovered,n), (n,recovered)]) for n in self.G.neighbors(recovered) ]
@@ -154,18 +158,13 @@ class SIS():
         if self.verbose:
             print("infective_link:", infective_link)
 
-        if self.SIR_nodes[ infective_link[0] ].is_susceptible() and self.SIR_nodes[ infective_link[1] ].is_infected():
-            newly_inf = infective_link[0]
-            self.infected.add(infective_link[0])            
-        elif self.SIR_nodes[ infective_link[1] ].is_susceptible() and self.SIR_nodes[ infective_link[0] ].is_infected():
+        if self.SIR_nodes[ infective_link[0] ].is_infected() and self.SIR_nodes[ infective_link[1] ].is_susceptible():
             newly_inf = infective_link[1]
             self.infected.add(infective_link[1])
+        elif self.SIR_nodes[ infective_link[1] ].is_infected() and self.SIR_nodes[ infective_link[0] ].is_susceptible():
+            newly_inf = infective_link[0]
+            self.infected.add(infective_link[0])
         else:
-            print("edge:", infective_link)
-            print(infective_link[0],"S  :",self.SIR_nodes[ infective_link[0] ].is_susceptible())
-            print(infective_link[0],"I  :",self.SIR_nodes[ infective_link[0] ].is_infected())
-            print(infective_link[1],"S  :",self.SIR_nodes[ infective_link[1] ].is_susceptible())
-            print(infective_link[1],"I  :",self.SIR_nodes[ infective_link[1] ].is_infected())
             raise ValueError("There was a non SI-link in the array of SI links. This shouldn't happen.")        
 
         self.SIR_nodes[newly_inf].set_infected()
@@ -183,6 +182,20 @@ class SIS():
         self.SI_links.update(new_SI_links)
         self.SI_links.difference_update(removed_SI_links)
 
+    def susceptible_event(self):
+
+        if self.verbose:
+            print("============ susceptible event")
+            print("recovered: ", self.recovered)
+        newly_susceptible = random.sample(self.recovered,1)[0]
+        self.recovered.remove(newly_susceptible)
+        self.SIR_nodes[newly_susceptible].set_susceptible()
+
+        new_edges = [ (newly_susceptible, n) for n in self.G.neighbors(newly_susceptible) ]
+        removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+
+        self.SI_links.update(new_SI_links)
+        self.SI_links.difference_update(removed_SI_links)
 
     def rewire_event(self):
 
@@ -229,9 +242,13 @@ class SIS():
             self.i_of_t.append([ self.t, self.i() ])
         elif event==1:
             self.recover_event()
-            self.s_of_t.append([ self.t, self.s() ])
+            self.r_of_t.append([ self.t, self.r() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==2:
+            self.susceptible_event()
+            self.r_of_t.append([ self.t, self.r() ])
+            self.s_of_t.append([ self.t, self.s() ])
+        elif event==3:
             self.rewire_event()
             if self.mean_degree is not None:
                 self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
@@ -239,7 +256,7 @@ class SIS():
 
     def simulate(self,tmax):
 
-        while self.t < tmax:
+        while self.t <= tmax and self.number_of_infected()>0 and self.number_of_susceptibles()>0:
             self.event()
 
     def number_of_SI_links(self):
@@ -292,7 +309,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.7,N=1000)
+    F = flockwork(0.5,N=1000)
 
     start = time.time()
     print("equilibrating...")
@@ -303,22 +320,24 @@ if __name__=="__main__":
     end = time.time()
     print("equilibration done, took", end-start,"seconds")
 
-    infection_rate = 1.5 
+    infection_rate = 1. 
     recovery_rate = 1.
+    susceptible_rate = 1.
     rewiring_rate = 1.
 
 
-    sim = SIS(F.G,
+    sim = SIRS(F.G,
                         infection_rate,
                         recovery_rate,
+                        susceptible_rate,
                         rewiring_rate,
-                        infection_seeds = 5,
+                        infection_seeds = 2,
                         rewire_function = F.rewire,
                         mean_degree_function = F.mean_degree,
                         #verbose = True,
                         )
 
-    sim.simulate(tmax=10)
+    sim.simulate(40)
 
     fig,ax = pl.subplots(2,1,figsize=(9,6))
 
