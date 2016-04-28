@@ -237,30 +237,30 @@ class SIR():
     def number_of_recovered(self):
         return len(self.recovered)
 
-    def S(self):
-        return self.number_of_susceptibles()
+    def s(self,normed=True):
+        if normed:
+            return self.number_of_susceptibles() / float(self.G.number_of_nodes())
+        else:
+            return self.number_of_susceptibles()
 
-    def I(self):
-        return self.number_of_infected()
+    def i(self,normed=True):
+        if normed:
+            return self.number_of_infected() / float(self.G.number_of_nodes())
+        else:
+            return self.number_of_infected()
 
-    def R(self):
-        return self.number_of_recovered()
-
-    def s(self):
-        return self.S() / float(self.G.number_of_nodes())
-
-    def i(self):
-        return self.I() / float(self.G.number_of_nodes())
-
-    def r(self):
-        return self.R() / float(self.G.number_of_nodes())
+    def r(self,normed=True):
+        if normed:
+            return self.number_of_recovered() / float(self.G.number_of_nodes())
+        else:
+            return self.number_of_recovered()
 
     def get_outbreak_size(self,normed=True):
         """return the size of the outbreak (number of susceptibles and recovered)"""
         if normed:
             return 1. - self.s()
         else:
-            return self.G.number_of_nodes() - self.S()
+            return self.G.number_of_nodes() - self.number_of_susceptibles()
 
     def _get_max_t(self):
         """return the time of the last event"""
@@ -285,13 +285,13 @@ class SIR():
         else:
             return arr[:,1]*self.G.number_of_nodes(), arr[:,0]
 
-    def get_S_of_t(self,normed=True):
+    def get_s_of_t(self,normed=True):
         return self._get_x_of_t(self.s_of_t,normed)
 
-    def get_I_of_t(self,normed=True):
+    def get_i_of_t(self,normed=True):
         return self._get_x_of_t(self.i_of_t,normed)
 
-    def get_R_of_t(self,normed=True):
+    def get_r_of_t(self,normed=True):
         return self._get_x_of_t(self.r_of_t,normed)
 
     def get_k_of_t(self):

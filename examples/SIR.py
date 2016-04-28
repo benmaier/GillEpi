@@ -1,19 +1,3 @@
-# GillEpi
-
-Provides classes to simulate epidemics on (potentially time varying) networks using a Gillespie stochastic simulation algorithm.
-
-## Install 
-
-    $ sudo python setup.py install   #or
-    $ sudo pip install ../GillEpi    #or
-    $ python setup.py install --user #or
-    $ pip install ../GillEpi  --user
-
-## Examples
-
-As an example for time-varying networks, I use the flockwork model (https://github.com/benmaier/flockworks).
-
-```python
 from flockworks import flockwork
 import GillEpi
 import pylab as pl
@@ -55,4 +39,3 @@ R0,t = sir.get_R0_of_t()
 ax[1].step(t,R0)
 
 pl.show()
-```
