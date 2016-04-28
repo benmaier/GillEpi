@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='GillEpi',
-      version='0.0.2',
+      version='0.0.3',
       description='Provides classes to simulate epidemics on (potentially time varying) networks using a Gillespie stochastic simulation algorithm.',
       url='https://www.github.com/benmaier/GillEpi',
       author='Benjamin F. Maier',
