@@ -4,7 +4,6 @@ import random
 import numpy as np
 import networkx as nx
 
-import GillEpi.SIR_node as SIR_node
 import GillEpi.SIR as SIR
 
 class SIRS(SIR):
@@ -38,7 +37,7 @@ class SIRS(SIR):
 
         self.susceptible_rate = susceptible_rate
 
-    def get_event_rates(self):
+    def _get_event_rates(self):
         return np.array([ 
                           self.number_of_SI_links()  * self.infection_rate,
                           self.number_of_infected()  * self.recovery_rate,
@@ -46,7 +45,7 @@ class SIRS(SIR):
                           self.G.number_of_nodes()   * self.rewiring_rate
                         ],dtype=float)
 
-    def susceptible_event(self):
+    def _susceptible_event(self):
 
         if self.verbose:
             print("============ susceptible event")
@@ -56,30 +55,30 @@ class SIRS(SIR):
         self.SIR_nodes[newly_susceptible].set_susceptible()
 
         new_edges = [ (newly_susceptible, n) for n in self.G.neighbors(newly_susceptible) ]
-        removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+        removed_SI_links, new_SI_links = self._get_removed_and_new_SI_links_from_edge_list(new_edges)
 
         self.SI_links.update(new_SI_links)
         self.SI_links.difference_update(removed_SI_links)
 
-    def event(self):
+    def _event(self):
 
-        tau,event = self.choose_tau_and_event()
+        tau,event = self._choose_tau_and_event()
         self.t += tau
 
         if event==0:
-            self.infection_event()
+            self._infection_event()
             self.s_of_t.append([ self.t, self.s() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==1:
-            self.recover_event()
+            self._recover_event()
             self.r_of_t.append([ self.t, self.r() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==2:
-            self.susceptible_event()
+            self._susceptible_event()
             self.r_of_t.append([ self.t, self.r() ])
             self.s_of_t.append([ self.t, self.s() ])
         elif event==3:
-            self.rewire_event()
+            self._rewire_event()
             if self.mean_degree is not None:
                 self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
 
@@ -87,7 +86,7 @@ class SIRS(SIR):
     def simulate(self,tmax):
 
         while self.t <= tmax and self.number_of_infected()>0 and self.number_of_susceptibles()>0:
-            self.event()
+            self._event()
 
 
             
@@ -100,7 +99,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.7,N=1000)
+    F = flockwork(0.7,N=100)
 
     start = time.time()
     print("equilibrating...")
@@ -139,7 +138,7 @@ if __name__=="__main__":
     ax[0].step(r[:,0],r[:,1])
     ax[0].step(i[:,0],i[:,1])
 
-    t,R0 = sim.get_t_R0()
+    R0, t = sim.get_R0_of_t()
 
     if show_eq:
         t_eq = ts['t']-ts['t'][-1]

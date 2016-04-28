@@ -4,8 +4,7 @@ import random
 import numpy as np
 import networkx as nx
 
-from SIR_node import SIR_node
-from SIR import SIR
+from GillEpi import SIR
 
 class SI(SIR):
 
@@ -35,11 +34,9 @@ class SI(SIR):
                  save_everything = save_everything
                 )
 
-    def get_t_R0(self):        
-        if self.mean_degree is not None:
-            k_of_t = np.array(self.k_of_t)
-            t, k = k_of_t[:,0], k_of_t[:,1]
-            return t, k * self.infection_rate
+    def get_R0_of_t(self):        
+        k,t = self.get_k_of_t()
+        return k * self.infection_rate, t
 
 if __name__=="__main__":
     from flockworks import flockwork
@@ -85,7 +82,7 @@ if __name__=="__main__":
     ax[0].step(r[:,0],r[:,1])
     ax[0].step(i[:,0],i[:,1])
 
-    t,R0 = sim.get_t_R0()
+    R0,t = sim.get_R0_of_t()
     print(R0)
 
     if show_eq:

@@ -4,7 +4,6 @@ import random
 import numpy as np
 import networkx as nx
 
-import GillEpi.SIR_node as SIR_node
 import GillEpi.SIR as SIR
 
 class SIS(SIR):
@@ -35,7 +34,7 @@ class SIS(SIR):
                  save_everything = save_everything
                 )
 
-    def recover_event(self):
+    def _recover_event(self):
 
         if self.verbose:
             print("============ recover event")
@@ -51,21 +50,21 @@ class SIS(SIR):
 
         self.SI_links.difference_update(deleted_edges)
 
-    def event(self):
+    def _event(self):
 
-        tau,event = self.choose_tau_and_event()
+        tau,event = self._choose_tau_and_event()
         self.t += tau
 
         if event==0:
-            self.infection_event()
+            self._infection_event()
             self.s_of_t.append([ self.t, self.s() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==1:
-            self.recover_event()
+            self._recover_event()
             self.s_of_t.append([ self.t, self.s() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==2:
-            self.rewire_event()
+            self._rewire_event()
             if self.mean_degree is not None:
                 self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
 
@@ -73,7 +72,7 @@ class SIS(SIR):
     def simulate(self,tmax):
 
         while self.t < tmax:
-            self.event()
+            self._event()
 
 
             
@@ -86,7 +85,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.7,N=1000)
+    F = flockwork(0.7,N=100)
 
     start = time.time()
     print("equilibrating...")
@@ -123,7 +122,7 @@ if __name__=="__main__":
     ax[0].step(r[:,0],r[:,1])
     ax[0].step(i[:,0],i[:,1])
 
-    t,R0 = sim.get_t_R0()
+    R0, t = sim.get_R0_of_t()
 
     if show_eq:
         t_eq = ts['t']-ts['t'][-1]

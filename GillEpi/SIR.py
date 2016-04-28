@@ -4,7 +4,7 @@ import random
 import numpy as np
 import networkx as nx
 
-import GillEpi.SIR_node as SIR_node
+from GillEpi import SIR_node
 
 class SIR():
 
@@ -77,7 +77,7 @@ class SIR():
         self.SI_links = set()
         for newly_inf in self.infected:
             new_edges = [ (newly_inf, n) for n in G.neighbors(newly_inf) ]
-            removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+            removed_SI_links, new_SI_links = self._get_removed_and_new_SI_links_from_edge_list(new_edges)
             self.SI_links.update(new_SI_links)
             self.SI_links.difference_update(removed_SI_links)
 
@@ -90,31 +90,14 @@ class SIR():
             self.k_of_t = [ [ 0., self.mean_degree(G) ] ]
 
 
-    def get_event_rates(self):
+    def _get_event_rates(self):
         return np.array([ 
                           self.number_of_SI_links() * self.infection_rate,
                           self.number_of_infected() * self.recovery_rate,
                           self.G.number_of_nodes()  * self.rewiring_rate
                         ],dtype=float)
 
-    """
-    def is_susceptible(self,node):
-        return (node not in self.infected) and (node not in self.recovered)
-
-    def get_removed_and_new_SI_links_from_edge_list(self,edgelist):
-        new_SI = []
-        removed_SI = []
-        [ 
-              new_SI.append(e) \
-              if ( (e[0] in self.infected and self.is_susceptible(e[1]) ) or \
-                   (e[1] in self.infected and self.is_susceptible(e[0]) ) )  \
-              else removed_SI.extend([e,(e[1],e[0])]) \
-              for e in edgelist
-        ]
-        return removed_SI, new_SI
-    """
-
-    def get_removed_and_new_SI_links_from_edge_list(self,edgelist):
+    def _get_removed_and_new_SI_links_from_edge_list(self,edgelist):
         new_SI = []
         removed_SI = []
         [ 
@@ -126,7 +109,7 @@ class SIR():
         ]
         return removed_SI, new_SI
 
-    def recover_event(self):
+    def _recover_event(self):
 
         if self.verbose:
             print("============ recover event")
@@ -143,7 +126,7 @@ class SIR():
 
         self.SI_links.difference_update(deleted_edges)
 
-    def infection_event(self):
+    def _infection_event(self):
         #if self.verbose:
         if self.verbose:    
             print("============= infection event")
@@ -169,7 +152,7 @@ class SIR():
 
         # process new edges for SI links
         new_edges = [ (newly_inf, n) for n in self.G.neighbors(newly_inf) ]
-        removed_SI_links,new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+        removed_SI_links,new_SI_links = self._get_removed_and_new_SI_links_from_edge_list(new_edges)
 
         if self.verbose:
             print("now infected:", self.infected)
@@ -181,7 +164,7 @@ class SIR():
         self.SI_links.difference_update(removed_SI_links)
 
 
-    def rewire_event(self):
+    def _rewire_event(self):
 
         # get deleted and new edges from rewiring 
         deleted_edges, new_edges = self.rewire_function()
@@ -198,15 +181,14 @@ class SIR():
         self.SI_links.difference_update(adjoint_deleted_edges)
 
         # process new edges for SI links
-        removed_SI_links, new_SI_links = self.get_removed_and_new_SI_links_from_edge_list(new_edges)
+        removed_SI_links, new_SI_links = self._get_removed_and_new_SI_links_from_edge_list(new_edges)
         self.SI_links.update(new_SI_links)
         self.SI_links.difference_update(removed_SI_links)
 
-    def choose_tau_and_event(self):
-        rates = self.get_event_rates()
+    def _choose_tau_and_event(self):
+        rates = self._get_event_rates()
         total_rate = rates.sum()
         tau = np.random.exponential(1./total_rate)
-        print(rates)
         try:
             event = np.random.choice(len(rates),p=rates/total_rate)
         except ValueError as e:
@@ -216,21 +198,21 @@ class SIR():
 
         return tau, event
 
-    def event(self):
+    def _event(self):
 
-        tau,event = self.choose_tau_and_event()
+        tau,event = self._choose_tau_and_event()
         self.t += tau
 
         if event==0:
-            self.infection_event()
+            self._infection_event()
             self.s_of_t.append([ self.t, self.s() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==1:
-            self.recover_event()
+            self._recover_event()
             self.r_of_t.append([ self.t, self.r() ])
             self.i_of_t.append([ self.t, self.i() ])
         elif event==2:
-            self.rewire_event()
+            self._rewire_event()
             if self.mean_degree is not None:
                 self.k_of_t.append([ self.t, self.mean_degree(self.G) ])
 
@@ -238,7 +220,7 @@ class SIR():
     def simulate(self):
 
         while self.number_of_infected() > 0 and self.number_of_susceptibles() > 0:
-            self.event()
+            self._event()
 
     def number_of_SI_links(self):
         return len(self.SI_links)
@@ -273,11 +255,54 @@ class SIR():
     def r(self):
         return self.R() / float(self.G.number_of_nodes())
 
-    def get_t_R0(self):        
+    def get_outbreak_size(self,normed=True):
+        """return the size of the outbreak (number of susceptibles and recovered)"""
+        if normed:
+            return 1. - self.s()
+        else:
+            return self.G.number_of_nodes() - self.S()
+
+    def _get_max_t(self):
+        """return the time of the last event"""
+        return max([ 
+                        self.s_of_t[-1][0],
+                        self.i_of_t[-1][0],
+                        self.r_of_t[-1][0],
+                        self.k_of_t[-1][0],
+                  ])
+
+    def _get_x_of_t(self,arr,normed=True):
+        """get the time of the last event, append it to the list and pass back an nd.array"""
+        t_max = self._get_max_t()
+        arr = list(arr)
+
+        if arr[-1][0]<t_max:
+            arr.append([t_max,arr[-1][1]])
+
+        arr = np.array(arr)
+        if normed:
+            return arr[:,1], arr[:,0]
+        else:
+            return arr[:,1]*self.G.number_of_nodes(), arr[:,0]
+
+    def get_S_of_t(self,normed=True):
+        return self._get_x_of_t(self.s_of_t,normed)
+
+    def get_I_of_t(self,normed=True):
+        return self._get_x_of_t(self.i_of_t,normed)
+
+    def get_R_of_t(self,normed=True):
+        return self._get_x_of_t(self.r_of_t,normed)
+
+    def get_k_of_t(self):
         if self.mean_degree is not None:
-            k_of_t = np.array(self.k_of_t)
-            t, k = k_of_t[:,0], k_of_t[:,1]
-            return t, k * self.infection_rate / self.recovery_rate
+            return self._get_x_of_t(self.k_of_t,normed=True)
+        else:
+            raise ValueError("degree has not been calculated since a function was not provided")
+
+    def get_R0_of_t(self):        
+        k,t = self.get_k_of_t()
+        return k * self.infection_rate / self.recovery_rate, t
 
 
             
@@ -290,7 +315,7 @@ if __name__=="__main__":
 
     show_eq = False
 
-    F = flockwork(0.8,N=1000)
+    F = flockwork(0.8,N=100)
 
     start = time.time()
     print("equilibrating...")
@@ -327,7 +352,7 @@ if __name__=="__main__":
     ax[0].step(r[:,0],r[:,1])
     ax[0].step(i[:,0],i[:,1])
 
-    t,R0 = sim.get_t_R0()
+    R0, t = sim.get_R0_of_t()
 
     if show_eq:
         t_eq = ts['t']-ts['t'][-1]

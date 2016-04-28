@@ -1,5 +1,4 @@
 
-
 class SIR_node():
 
     def __init__(self):
