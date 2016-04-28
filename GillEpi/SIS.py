@@ -4,8 +4,8 @@ import random
 import numpy as np
 import networkx as nx
 
-from GillEpi.SIR_node import SIR_node
-from GillEpi.SIR import SIR
+import GillEpi.SIR_node as SIR_node
+import GillEpi.SIR as SIR
 
 class SIS(SIR):
 

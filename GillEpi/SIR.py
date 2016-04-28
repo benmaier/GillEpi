@@ -4,7 +4,7 @@ import random
 import numpy as np
 import networkx as nx
 
-from SIR_node import SIR_node
+import GillEpi.SIR_node as SIR_node
 
 class SIR():
 
