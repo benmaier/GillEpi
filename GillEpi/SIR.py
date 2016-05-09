@@ -256,7 +256,7 @@ class SIR():
             return self.number_of_recovered()
 
     def get_outbreak_size(self,normed=True):
-        """return the size of the outbreak (number of susceptibles and recovered)"""
+        """return the size of the outbreak (number of infected and recovered)"""
         if normed:
             return 1. - self.s()
         else:
