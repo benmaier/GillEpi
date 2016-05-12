@@ -35,10 +35,10 @@ class SIR():
         if self.rewire_function is None:
             self.rewiring_rate = 0.
         else:
-            self.rewiring_rate = rewiring_rate
+            self.rewiring_rate = float(rewiring_rate)
 
-        self.infection_rate = infection_rate
-        self.recovery_rate = recovery_rate
+        self.infection_rate = float(infection_rate)
+        self.recovery_rate = float(recovery_rate)
 
         self.rates = np.array( [ infection_rate, recovery_rate, rewiring_rate ] )
 
@@ -47,6 +47,9 @@ class SIR():
         self.nodes = set(G.nodes())
 
         self.SIR_nodes = { n:SIR_node() for n in self.nodes }
+
+        if not hasattr(infection_seeds,"__len__") and infection_seeds<1:
+            infection_seeds = int(self.G.number_of_nodes()*infection_seeds)
 
         # add vaccinated nodes (are in recovered class right from the beginning)
         if vaccinated>0:
@@ -72,6 +75,7 @@ class SIR():
         self.infected.update(seed_nodes)
         for n in seed_nodes:
             self.SIR_nodes[n].set_infected()
+
 
         # process new edges for SI links
         self.SI_links = set()
@@ -264,12 +268,19 @@ class SIR():
 
     def _get_max_t(self):
         """return the time of the last event"""
-        return max([ 
-                        self.s_of_t[-1][0],
-                        self.i_of_t[-1][0],
-                        self.r_of_t[-1][0],
-                        self.k_of_t[-1][0],
-                  ])
+        if hasattr(self,'k_of_t'):
+            return max([ 
+                            self.s_of_t[-1][0],
+                            self.i_of_t[-1][0],
+                            self.r_of_t[-1][0],
+                            self.k_of_t[-1][0],
+                      ])
+        else:
+            return max([ 
+                            self.s_of_t[-1][0],
+                            self.i_of_t[-1][0],
+                            self.r_of_t[-1][0],
+                      ])
 
     def _get_x_of_t(self,arr,normed=True):
         """get the time of the last event, append it to the list and pass back an nd.array"""
@@ -284,6 +295,7 @@ class SIR():
             return arr[:,1], arr[:,0]
         else:
             return arr[:,1]*self.G.number_of_nodes(), arr[:,0]
+
 
     def get_s_of_t(self,normed=True):
         return self._get_x_of_t(self.s_of_t,normed)
@@ -302,6 +314,31 @@ class SIR():
 
     def get_R0_of_t(self):        
         k,t = self.get_k_of_t()
+        return k * self.infection_rate / self.recovery_rate, t
+
+
+    def _get_x_starting_at_t(self,arr,t_start,normed=True):
+        x,t = self._get_x_of_t(arr,normed=True)
+        ndcs = np.where(t>=t_start)
+        return x[ndcs], t[ndcs]
+
+    def get_s_starting_at_t(self,t_start,normed=True):
+        return self._get_x_starting_at_t(self.s_of_t,t_start,normed)
+
+    def get_i_starting_at_t(self,t_start,normed=True):
+        return self._get_x_starting_at_t(self.i_of_t,t_start,normed)
+
+    def get_r_starting_at_t(self,t_start,normed=True):
+        return self._get_x_starting_at_t(self.r_of_t,t_start,normed)
+
+    def get_k_starting_at_t(self,t_start):
+        if self.mean_degree is not None:
+            return self._get_x_starting_at_t(self.k_of_t,t_start,normed=True)
+        else:
+            raise ValueError("degree has not been calculated since a function was not provided")
+
+    def get_R0_starting_at_t(self,t_start):        
+        k,t = self.get_k_starting_at_t(t_start)
         return k * self.infection_rate / self.recovery_rate, t
 
 
