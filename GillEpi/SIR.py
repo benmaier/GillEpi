@@ -86,6 +86,7 @@ class SIR():
             self.SI_links.difference_update(removed_SI_links)
 
         self.t = 0.
+        self.t_max = 0.
         self.s_of_t = [ [ 0., self.s() ] ]
         self.i_of_t = [ [ 0., self.i() ] ]
         self.r_of_t = [ [ 0., self.r() ] ]
@@ -206,6 +207,7 @@ class SIR():
 
         tau,event = self._choose_tau_and_event()
         self.t += tau
+        self.t_max = self.t
 
         if event==0:
             self._infection_event()
@@ -268,6 +270,7 @@ class SIR():
 
     def _get_max_t(self):
         """return the time of the last event"""
+        """
         if hasattr(self,'k_of_t'):
             return max([ 
                             self.s_of_t[-1][0],
@@ -281,6 +284,8 @@ class SIR():
                             self.i_of_t[-1][0],
                             self.r_of_t[-1][0],
                       ])
+        """
+        return self.t_max
 
     def _get_x_of_t(self,arr,normed=True):
         """get the time of the last event, append it to the list and pass back an nd.array"""

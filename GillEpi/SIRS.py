@@ -64,6 +64,7 @@ class SIRS(SIR):
 
         tau,event = self._choose_tau_and_event()
         self.t += tau
+        self.t_max = self.t
 
         if event==0:
             self._infection_event()
