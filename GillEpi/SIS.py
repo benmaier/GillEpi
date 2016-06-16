@@ -55,6 +55,7 @@ class SIS(SIR):
 
         else:
             self.start_near_equilibrium = False
+
             
 
         SIR.__init__(self,
@@ -72,23 +73,34 @@ class SIS(SIR):
 
         self.without_extinction = without_extinction
 
+        if self.verbose:
+            print(self.infection_rate)
+            print(self.recovery_rate)
+            print(self.number_of_SI_links())
+
     def _recover_event(self):
 
         if self.verbose:
             print("============ recover event")
 
-        if not self.without_extinction or \
+        if (not self.without_extinction) or \
            (self.without_extinction and self.number_of_infected()>1):
             recovered = random.sample(self.infected,1)[0]
             self.infected.remove(recovered)
             self.SIR_nodes[recovered].set_susceptible()
 
             deleted_edges = []
-            [ deleted_edges.extend([(recovered,n), (n,recovered)]) for n in self.G.neighbors(recovered) ]
+            new_edges = []
+            [     deleted_edges.extend([(recovered,n), (n,recovered)]) \
+               if self.SIR_nodes[n].is_susceptible() \
+               else \
+                  new_edges.append((recovered,n)) \
+               for n in self.G.neighbors(recovered) ]
 
             if self.verbose:
                 print("deleted",deleted_edges)
 
+            self.SI_links.update(new_edges)
             self.SI_links.difference_update(deleted_edges)
 
     def _event(self):

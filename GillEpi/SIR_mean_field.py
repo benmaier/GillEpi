@@ -1,47 +1,28 @@
 from __future__ import print_function
 import random
-import sys
 
 import numpy as np
 import networkx as nx
 
 from GillEpi import SIR_node
 
-class SIR():
+class SIR_mean_field():
 
     def __init__(self,
-                 G,              # (dynamic) network. beware! this is going to change during simulation
+                 N, # total number of individuals
                  infection_rate, # per S-I link
-                 recovery_rate,  # per individual
-                 rewiring_rate = 0.,  # per individual
+                 recovery_rate = 1.,
                  infection_seeds = 5,
                  vaccinated = 0,
-                 rewire_function = None,
-                 mean_degree_function = None,
                  verbose = False,
                  save_everything = False
                 ):
 
-
-        if nx.is_directed(G):
-            raise TypeError("G is directed but needs to be undirected")
-
-        self.G = G
-
-        self.rewire_function = rewire_function
-        self.mean_degree = mean_degree_function
-
         self.verbose = verbose
-
-        if self.rewire_function is None:
-            self.rewiring_rate = 0.
-        else:
-            self.rewiring_rate = float(rewiring_rate)
 
         self.infection_rate = float(infection_rate)
         self.recovery_rate = float(recovery_rate)
 
-        self.rates = np.array( [ infection_rate, recovery_rate, rewiring_rate ] )
 
         self.infected = set()
         self.recovered = set()
@@ -54,16 +35,9 @@ class SIR():
 
         # add vaccinated nodes (are in recovered class right from the beginning)
         if vaccinated>0:
-            if hasattr(infection_seeds,"__len__"):
-                to_choose_from = self.nodes() - set(infection_seeds)
-            else:
-                to_choose_from = self.nodes()
+            raise "Not implemented yet"
 
-            vaccinated_nodes = random.sample(to_choose_from,vaccinated)
-            self.recovered.update(vaccinated_nodes)
-            
-            for n in vaccinated_nodes:
-               self.SIR_nodes[n].set_recovered()
+
 
 
         # add infected seed nodes
@@ -134,7 +108,7 @@ class SIR():
 
     def _infection_event(self):
         #if self.verbose:
-        if self.verbose:   
+        if self.verbose:    
             print("============= infection event")
             print("infected:", self.infected)
             print("recovered:", self.recovered)
@@ -193,8 +167,6 @@ class SIR():
 
     def _choose_tau_and_event(self):
         rates = self._get_event_rates()
-        #print(self.G.number_of_edges(),self.number_of_SI_links())
-        #print(self.number_of_SI_links(),self.number_of_infected()*(self.G.number_of_nodes()-self.number_of_infected()))
         total_rate = rates.sum()
         tau = np.random.exponential(1./total_rate)
         try:
