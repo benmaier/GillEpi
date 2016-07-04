@@ -55,9 +55,9 @@ class SIR():
         # add vaccinated nodes (are in recovered class right from the beginning)
         if vaccinated>0:
             if hasattr(infection_seeds,"__len__"):
-                to_choose_from = self.nodes() - set(infection_seeds)
+                to_choose_from = self.nodes - set(infection_seeds)
             else:
-                to_choose_from = self.nodes()
+                to_choose_from = self.nodes
 
             vaccinated_nodes = random.sample(to_choose_from,vaccinated)
             self.recovered.update(vaccinated_nodes)
@@ -85,6 +85,29 @@ class SIR():
             removed_SI_links, new_SI_links = self._get_removed_and_new_SI_links_from_edge_list(new_edges)
             self.SI_links.update(new_SI_links)
             self.SI_links.difference_update(removed_SI_links)
+
+        """
+        for e in self.SI_links:
+            s = ''
+            if self.SIR_nodes[e[0]].is_susceptible():
+                s += 'S '
+            elif self.SIR_nodes[e[0]].is_infected():
+                s += 'I '
+            elif self.SIR_nodes[e[0]].is_recovered():
+                s += 'R '
+            else:
+                raise ValueError("hwaht")
+            if self.SIR_nodes[e[1]].is_susceptible():
+                s += 'S '
+            elif self.SIR_nodes[e[1]].is_infected():
+                s += 'I '
+            elif self.SIR_nodes[e[1]].is_recovered():
+                s += 'R '
+            else:
+                raise ValueError("hwaht")
+            print(s)
+         """
+                
 
         self.t = 0.
         self.t_max = 0.

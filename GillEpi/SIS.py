@@ -91,11 +91,18 @@ class SIS(SIR):
 
             deleted_edges = []
             new_edges = []
+            """
             [     deleted_edges.extend([(recovered,n), (n,recovered)]) \
                if self.SIR_nodes[n].is_susceptible() \
                else \
                   new_edges.append((recovered,n)) \
                for n in self.G.neighbors(recovered) ]
+            """
+            for n in self.G.neighbors(recovered):
+                if self.SIR_nodes[n].is_susceptible():
+                    deleted_edges.extend([(recovered,n), (n,recovered)])
+                elif self.SIR_nodes[n].is_infected():
+                    new_edges.append((recovered,n))
 
             if self.verbose:
                 print("deleted",deleted_edges)
