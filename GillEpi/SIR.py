@@ -251,7 +251,7 @@ class SIR():
 
     def simulate(self):
 
-        while self.number_of_infected() > 0 and self.number_of_susceptibles() > 0:
+        while self.number_of_infected() > 0:
             self._event()
 
     def number_of_SI_links(self):
