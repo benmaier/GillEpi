@@ -89,6 +89,8 @@ class SIR:
             if self.I[-1] == 0:
                 self.DONE = True
                 break
+
+        self.time = np.array(N_t+1,dtype=float)
         
     def outbreak(self):
         to_be_infected = set()
@@ -227,6 +229,8 @@ class SIS:
             if self.I[-1] == 0:
                 self.DONE = True
                 break
+
+        self.time = array(N_t+1,dtype=float)
         
     def outbreak(self):
         to_be_infected = set()
