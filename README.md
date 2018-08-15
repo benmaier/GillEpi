@@ -22,6 +22,8 @@ from GillEpi.agent_based_epidemics import SIR as AB_SIR
 from GillEpi.agent_based_epidemics import SIS as AB_SIS
 ```
 
+Find out the functionality using Python's help function and the examples below.
+
 ### Standard
 
 ```python
@@ -56,6 +58,8 @@ pl.show()
 ```
 
 ### Agent-based model
+
+I'm not a big fan of the node-centric ABM since the reaction `S+I - > I+I` is not being reflected with the right rates.
 
 ```python
 from GillEpi.agent_based_epidemics import SIS as ABM_SIS
