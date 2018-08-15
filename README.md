@@ -1,15 +1,96 @@
 # GillEpi
 
-Provides classes to simulate epidemics on (potentially time varying) networks using a Gillespie stochastic simulation algorithm.
+Provides pure Python classes to simulate epidemics on (potentially time varying) networks using a Gillespie stochastic simulation algorithm or the standard ABM SIS, SIR models.
 
 ## Install 
 
-    $ sudo python setup.py install   #or
-    $ sudo pip install ../GillEpi    #or
-    $ python setup.py install --user #or
-    $ pip install ../GillEpi  --user
+### Development version
+
+    $ make
+
+### Standard
+
+    $ make install
 
 ## Examples
+
+### List of classes
+
+```python
+from GillEpi import SI, SIS, SIR, SIRS
+from GillEpi.agent_based_epidemics import SIR as AB_SIR
+from GillEpi.agent_based_epidemics import SIS as AB_SIS
+```
+
+### Standard
+
+```python
+import GillEpi
+import matplotlib.pyplot as pl
+import networkx as nx
+
+N = 100
+k = 8
+p = k / (N-1.0)
+G = nx.fast_gnp_random_graph(N, p)
+
+R0 = 1.5
+recovery_rate = 1.0
+infection_rate = R0 * recovery_rate / k
+tmax = 1000
+
+sis = GillEpi.SIS(
+                  G,
+                  infection_rate = infection_rate,
+                  recovery_rate = recovery_rate,
+                 )
+
+# simulate
+sis.simulate(tmax)
+
+# plot infected cluster
+i, t = sis.get_i_of_t()
+pl.step(t,i)
+
+pl.show()
+```
+
+### Agent-based model
+
+```python
+from GillEpi.agent_based_epidemics import SIS as ABM_SIS
+import matplotlib.pyplot as pl
+import numpy as np
+import networkx as nx
+
+N = 100
+k = 8
+p = k / (N-1.0)
+G = nx.fast_gnp_random_graph(N, p)
+
+R0 = 1.5
+recovery_probability = 0.01
+infection_rate = R0 * recovery_rate / k
+
+sis = ABM_SIS(
+              G,
+              infection_probability = infection_probability,
+              recovery_probability = recovery_probability,
+             )
+
+# simulate
+sis.step(tmax)
+
+# plot infected cluster
+i = sis.I
+t = sis.time
+
+pl.step(t, i)
+
+pl.show()
+```
+
+### Dynamic network
 
 As an example for time-varying networks, I use the flockwork model (https://github.com/benmaier/flockworks).
 

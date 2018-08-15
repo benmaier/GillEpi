@@ -90,7 +90,7 @@ class SIR:
                 self.DONE = True
                 break
 
-        self.time = np.array(N_t+1,dtype=float)
+        self.time = arange(N_t+1,dtype=float)
         
     def outbreak(self):
         to_be_infected = set()
@@ -230,7 +230,7 @@ class SIS:
                 self.DONE = True
                 break
 
-        self.time = array(N_t+1,dtype=float)
+        self.time = arange(N_t+1,dtype=float)
         
     def outbreak(self):
         to_be_infected = set()
