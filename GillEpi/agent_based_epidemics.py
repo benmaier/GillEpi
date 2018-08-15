@@ -1,3 +1,4 @@
+import random as rnd
 from numpy import *
 import networkx as nx
 #import numpy.random as random
@@ -12,7 +13,9 @@ class SIR:
                         recovery_probability,\
                         outbreak_probability = 0.0,\
                         save_node_changes = False,
-                        patients_zero = None):
+                        patients_zero = None,
+                        sample_single_infected = False,
+                        ):
         
         self.DONE = False
 
@@ -22,6 +25,7 @@ class SIR:
         self.r_O = outbreak_probability
         self.G = G
         self.patients_zero = patients_zero
+        self.sample_single_infected = sample_single_infected
 
         self.newly_infected = []
         self.newly_susceptible = []
@@ -106,16 +110,29 @@ class SIR:
         to_be_recovered = set()
         active_edges = set()
 
-        for i in self.infected:
+        if self.sample_single_infected:
+            i = rnd.sample(self.infected,1)[0]
             #for neigh in G.neighbors(i):
             for e in self.G.edges(i):
                 neigh = e[1]
                 if self.is_susceptible[neigh] and random.rand() < self.r_I:
                     to_be_infected.add(neigh)
                     active_edges.add(e)
-                    
+                        
+            i = rnd.sample(self.infected,1)[0]
             if random.rand() < self.r_R:
                 to_be_recovered.add(i)
+        else:
+            for i in self.infected:
+                #for neigh in G.neighbors(i):
+                for e in self.G.edges(i):
+                    neigh = e[1]
+                    if self.is_susceptible[neigh] and random.rand() < self.r_I:
+                        to_be_infected.add(neigh)
+                        active_edges.add(e)
+                        
+                if random.rand() < self.r_R:
+                    to_be_recovered.add(i)
 
         self.susceptible = self.susceptible - to_be_infected
         self.infected = self.infected | to_be_infected
@@ -133,7 +150,9 @@ class SIS:
                         recovery_probability,\
                         outbreak_probability = 0.0,\
                         save_node_changes = False,
-                        patients_zero = None):
+                        patients_zero = None,
+                        sample_single_infected = False,
+                        ):
         
         self.DONE = False
 
@@ -143,6 +162,8 @@ class SIS:
         self.r_O = outbreak_probability
         self.G = G
         self.patients_zero = patients_zero
+
+        self.sample_single_infected = sample_single_infected
 
         self.newly_infected = []
         self.newly_susceptible = []
@@ -227,16 +248,29 @@ class SIS:
         to_be_recovered = set()
         active_edges = set()
 
-        for i in self.infected:
+        if self.sample_single_infected:
+            i = rnd.sample(self.infected,1)[0]
             #for neigh in G.neighbors(i):
             for e in self.G.edges(i):
                 neigh = e[1]
                 if self.is_susceptible[neigh] and random.rand() < self.r_I:
                     to_be_infected.add(neigh)
                     active_edges.add(e)
-                    
+                        
+            i = rnd.sample(self.infected,1)[0]
             if random.rand() < self.r_R:
                 to_be_recovered.add(i)
+        else:
+            for i in self.infected:
+                #for neigh in G.neighbors(i):
+                for e in self.G.edges(i):
+                    neigh = e[1]
+                    if self.is_susceptible[neigh] and random.rand() < self.r_I:
+                        to_be_infected.add(neigh)
+                        active_edges.add(e)
+                        
+                if random.rand() < self.r_R:
+                    to_be_recovered.add(i)
 
         self.susceptible = self.susceptible - to_be_infected
         self.susceptible = self.susceptible | to_be_recovered
