@@ -8,18 +8,18 @@ import networkx as nx
 
 class SIR:
 
-    def __init__(self,G,rate_of_infection,\
-                        rate_of_recovery,\
-                        rate_of_outbreak = 0.0,\
+    def __init__(self,G,infection_probability,\
+                        recovery_probability,\
+                        outbreak_probability = 0.0,\
                         save_node_changes = False,
                         patients_zero = None):
         
         self.DONE = False
 
         self.save_node_changes = save_node_changes
-        self.r_I = rate_of_infection
-        self.r_R = rate_of_recovery
-        self.r_O = rate_of_outbreak
+        self.r_I = infection_probability
+        self.r_R = recovery_probability
+        self.r_O = outbreak_probability
         self.G = G
         self.patients_zero = patients_zero
 
@@ -129,18 +129,18 @@ class SIR:
 
 class SIS:
 
-    def __init__(self,G,rate_of_infection,\
-                        rate_of_recovery,\
-                        rate_of_outbreak = 0.0,\
+    def __init__(self,G,infection_probability,\
+                        recovery_probability,\
+                        outbreak_probability = 0.0,\
                         save_node_changes = False,
                         patients_zero = None):
         
         self.DONE = False
 
         self.save_node_changes = save_node_changes
-        self.r_I = rate_of_infection
-        self.r_R = rate_of_recovery
-        self.r_O = rate_of_outbreak
+        self.r_I = infection_probability
+        self.r_R = recovery_probability
+        self.r_O = outbreak_probability
         self.G = G
         self.patients_zero = patients_zero
 
@@ -269,9 +269,9 @@ if __name__ == "__main__":
         
     seed = 476 #no other connection
     #simulation parameters
-    rate_of_infection = 0.38
-    rate_of_recovery = 0.15
-    rate_of_outbreak = 1e-5
+    infection_probability = 0.38
+    recovery_probability = 0.15
+    outbreak_probability = 1e-5
     N_t = 200
     """
     """
@@ -285,9 +285,9 @@ if __name__ == "__main__":
         
     seed = 76 #no other connection
     #simulation parameters
-    rate_of_infection = 0.01
-    rate_of_recovery = 0.001
-    rate_of_outbreak = 0
+    infection_probability = 0.01
+    recovery_probability = 0.001
+    outbreak_probability = 0
     N_t = 200
     """
     #MHR parameters
@@ -304,9 +304,9 @@ if __name__ == "__main__":
         
     seed = 46 #no other connection
     #simulation parameters
-    rate_of_infection = 0.2
-    rate_of_recovery = 0.5
-    rate_of_outbreak = 0
+    infection_probability = 0.2
+    recovery_probability = 0.5
+    outbreak_probability = 0
     N_t = 1000
 
     #seed = 10010
@@ -322,8 +322,8 @@ if __name__ == "__main__":
     N_i0 = int(i0 * N)
     patients_zero = random.choice(G.nodes(),N_i0,replace=False)
 
-    simulation =  SIR(G,rate_of_infection,rate_of_recovery,rate_of_outbreak,save_node_changes=True,patients_zero=patients_zero)
-    simulation2 = SIS(G,rate_of_infection,rate_of_recovery,rate_of_outbreak,save_node_changes=True,patients_zero=patients_zero)
+    simulation =  SIR(G,infection_probability,recovery_probability,outbreak_probability,save_node_changes=True,patients_zero=patients_zero)
+    simulation2 = SIS(G,infection_probability,recovery_probability,outbreak_probability,save_node_changes=True,patients_zero=patients_zero)
     simulation.step(N_t=N_t)
 
     N_t = simulation.T+1
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     Sp, = ax1.plot([],[],'k')
     Ip, = ax1.plot([],[],'r')
     Rp, = ax1.plot([],[],'g')
-    i_star, = ax1.plot([0,N_t],2*[1-rate_of_recovery/rate_of_infection/k],'c')
+    i_star, = ax1.plot([0,N_t],2*[1-recovery_probability/infection_probability/k],'c')
     ax1.set_xlim([0,N_t])
     ax1.set_ylim([0,1])
     
