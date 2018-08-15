@@ -86,7 +86,7 @@ class SIRS(SIR):
 
     def simulate(self,tmax):
 
-        while self.t <= tmax:
+        while self.t <= tmax and (self.number_of_SI_links()>0 or self.number_of_infected()>0 or self.number_of_recovered()>0):
             self._event()
 
 
