@@ -70,12 +70,14 @@ G = nx.fast_gnp_random_graph(N, p)
 
 R0 = 1.5
 recovery_probability = 0.01
-infection_rate = R0 * recovery_rate / k
+infection_probability = R0 * recovery_probability / k
+tmax = 1000
 
 sis = ABM_SIS(
               G,
               infection_probability = infection_probability,
               recovery_probability = recovery_probability,
+              patients_zero = [0,1,2,45,34],
              )
 
 # simulate
