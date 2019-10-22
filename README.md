@@ -1,3 +1,7 @@
+BEWARE: THIS PACKAGE IS DEPRECATED
+
+Please use [tacoma](github.com/benmaier/tacoma) instead, which is maintained and works better in every way.
+
 # GillEpi
 
 Provides pure Python classes to simulate epidemics on (potentially time varying) networks using a Gillespie stochastic simulation algorithm or the standard ABM SIS, SIR models.
